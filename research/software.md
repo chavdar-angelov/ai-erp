@@ -6,6 +6,14 @@ The scope has three parts. How competitors build their software, and the good an
 
 Effort and cost figures are estimates unless a source is given. **(uncertain)** marks claims we couldn't verify.
 
+## Decisions (2026-10-16)
+
+- **Approach:** assemble, thin (section 2).
+- **Language:** **TypeScript** for the core (the team's main language). **PHP** for WordPress/WooCommerce plugins and PHP-based open-source modules (EspoCRM, Kimai).
+- **AI route:** **Google Vertex AI (`eu`) as primary, AWS Bedrock EU as fallback.**
+  - We already run on Google Workspace, and the Gmail connector needs Google Cloud Pub/Sub anyway. One cloud covers both.
+  - If Google Cloud isn't available, swap the order.
+
 ---
 
 ## Summary
@@ -18,7 +26,7 @@ Effort and cost figures are estimates unless a source is given. **(uncertain)** 
 - **Stack:**
   - TypeScript core and Postgres, one copy per client, hosted in the EU.
   - Claude models: **Sonnet 5.5** for drafts and questions, **Haiku 5.5** for sorting emails.
-  - Models run through **AWS Bedrock (EU regions) or Google Vertex (EU)**. Anthropic's own API can't keep processing in the EU.
+  - Models run through **Google Vertex AI (`eu`)**, with **AWS Bedrock (EU regions)** as the fallback. Anthropic's own API can't keep processing in the EU.
   - The whole stack is MIT or Apache licensed, so it's safe to white-label through UK partners.
 - **The core design rule:**
   - The AI only *proposes*.
@@ -105,7 +113,7 @@ These are estimates.
 │   Gmail · M365 · IMAP · Slack · Teams · HubSpot · Redmine · FreeAgent · Xero ·      │
 │   WooCommerce · Econt · Speedy · inv.bg · Microinvest (via bridge)                  │
 └─────────────────────────────────────────────────────────────────────────────────────┘
-        │ AI model calls: Bedrock EU (Frankfurt/Ireland) or Vertex eu
+        │ AI model calls: Vertex AI eu (primary) / Bedrock EU (fallback)
         │ Traces: Langfuse (EU)
 ```
 
@@ -125,10 +133,10 @@ These are estimates.
 
 | Layer | Choice | Why | Alternatives |
 |---|---|---|---|
-| Language | **TypeScript (Node 22)** for the core; **PHP** for WordPress and WooCommerce plugins | Best SDKs for everything we need: MCP (top-tier support), Slack Bolt, Teams SDK, Microsoft Graph, AI SDK. The official PHP MCP SDK is still experimental. | Laravel for the approvals, audit and UI side, with a Node service for agents (only if the team is much stronger in PHP) |
+| Language | **TypeScript (Node 22)** for the core; **PHP** for WordPress and WooCommerce plugins and PHP-based modules (EspoCRM, Kimai) | **Decided.** TypeScript is the team's main language and has the best SDKs for everything we need: MCP (top-tier support), Slack Bolt, Teams SDK, Microsoft Graph, AI SDK. The official PHP MCP SDK is still experimental. | — |
 | Agent framework | **Vercel AI SDK 7** (released Jun 2026) | Thin, works with many model providers, built-in MCP client, per-tool approval policies | Mastra (more built in, but 144 of its npm packages were backdoored in Jun 2026; pin versions). Claude Agent SDK (better for coding-style agents; approvals must happen inside the running process). Anthropic's hosted agents product (**no EU option**). |
 | Models | **Sonnet 5.5** ($2 / $10 per 1M tokens) for planning and drafts. **Haiku 5.5** ($0.10 / $0.50) for sorting and extraction. | Strong at tool use, and the small model is very cheap | Opus 5.5 ($4 / $20) for hard cases. Mistral or OpenAI EU as a fallback from a different vendor, used only during outages. |
-| EU processing | **AWS Bedrock EU inference profile** or **Vertex `eu`** (about +10% on price) | Anthropic's own API only offers US or global processing | Microsoft Foundry EU ("coming soon") |
+| EU processing | **Google Vertex AI `eu`** (primary), **AWS Bedrock EU** (fallback); both about +10% on price | **Decided.** Anthropic's own API only offers US or global processing. Vertex first because we run on Google Workspace and Gmail push needs Google Cloud Pub/Sub anyway: one cloud, one bill. | Microsoft Foundry EU ("coming soon") |
 | Monitoring | **Langfuse** (MIT; EU cloud, or one self-hosted EU instance with a project per client) + OpenTelemetry | Open source, EU region, evals built in | LangSmith (EU, but self-hosting is Enterprise only). Helicone is in maintenance mode; avoid. |
 
 **What we lose on Bedrock or Vertex** (per Anthropic's platform docs):
@@ -277,7 +285,7 @@ Estimates assume 2 developers.
 
 | Phase | What | Rough time |
 |---|---|---|
-| 0 | Move credentials out of Redmine. Run a read-only trial with Claude + existing MCP servers on our own tools. Set up Bedrock EU and Langfuse. | 1 wk |
+| 0 | Move credentials out of Redmine. Run a read-only trial with Claude + existing MCP servers on our own tools. Set up Vertex AI (`eu`) and Langfuse. | 1 wk |
 | 1 | **Core v0 + team follow-up for Sofyma.** Gmail (internal app), Slack bot, proposals and audit, quarantine step, drafts only. Measure before and after. | 3–4 wks |
 | 2 | Redmine + FreeAgent connectors. **Unbilled time → draft invoice.** Entity map v1. Per-client deploy tooling, Infisical, backups. Injection test set. | 3–4 wks |
 | 3 | **First 2–3 design-partner clients** (UK agencies). Microsoft 365 + IMAP, Teams bot, web approvals inbox. | 4–6 wks |
@@ -307,13 +315,12 @@ Estimates assume 2 developers.
 1. **Commoditization.** Claude for Small Business, Copilot and Gemini keep improving. Stay on local systems, cross-system work and the managed service. Sell outcomes (cash recovered, hours billed).
 2. **Maintenance drag.** API changes (e.g. Odoo's RPC removal, MCP's 2026-07-28 revision), per-client hosting and dying dependencies. Keep one codebase, pin versions, monitor every run, and keep the menu to 4 agents.
 3. **Security and liability.** Approval for every external write or send, limits on where data can go out, data processing agreements, and the injection test set from day one.
-4. **New models reach EU regions with a delay.** Check Sonnet 5.5 and Haiku 5.5 access on Bedrock EU before promising them.
+4. **New models reach EU regions with a delay.** Check Sonnet 5.5 and Haiku 5.5 availability and quota on Vertex `eu` (then Bedrock EU for the fallback) before promising them.
 5. **Bulgarian quality is unproven.** There's no public benchmark comparing the models in Bulgarian. **Build our own eval from 50–100 real emails before promising quality.**
 
 **Confirm before relying on these**
-- How strong the team is in TypeScript vs PHP. This decides whether Laravel owns part of the core.
 - Slack: do per-client apps count as "commercial distribution"?
-- Bedrock EU access for Sonnet 5.5 and Haiku 5.5. Vertex `eu` as the backup.
+- Sonnet 5.5 and Haiku 5.5 availability and quota on Vertex `eu` (and Bedrock EU for the fallback).
 - inv.bg API (docs exist at api.inv.bg/v3; check which plans include it). Is there an official Microinvest integration route?
 - n8n Embed price and terms, only if we ever want a visual builder for clients.
 - Licence for Inbox Zero, and whether self-hosted Twenty includes MCP.
