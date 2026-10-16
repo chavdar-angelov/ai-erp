@@ -319,7 +319,7 @@ This is a judgment call. If the partners show no interest in reselling, flip the
 
 - **We're a small team.** A custom deployment per client doesn't scale. Package early and say no to one-offs.
 - **Process discovery isn't our skill yet.** Practise it on our own team first.
-- **Big platforms keep improving.** Copilot and Gemini will absorb the simple cases, so stay on cross-system work and local systems.
+- **Big platforms keep improving.** Copilot and Gemini will absorb the simple cases. Anthropic's Claude for Small Business (May 2026) already gives SMBs connectors (QuickBooks, HubSpot, Google, Microsoft 365) with owner approval at no cost beyond Claude seats. Stay on cross-system work, local systems and running it for the client.
 - **The Microinvest bridge** means installing software on client machines: support and security work.
 - **Viber costs money** (bot fee plus messages). Price it into the package.
 - **E-invoicing is still a draft** (consultation until 23 Oct 2026). Watch it before investing.

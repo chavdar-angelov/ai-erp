@@ -1,6 +1,6 @@
 # AI operations layer: idea
 
-Status: draft, updated 2026-10-16. Market research: [research/market.md](research/market.md)
+Status: draft, updated 2026-10-16. Research: [market](research/market.md), [software](research/software.md)
 
 ## Goal
 
